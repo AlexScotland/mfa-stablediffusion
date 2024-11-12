@@ -1,6 +1,4 @@
 import io
-import gc
-import torch
 import os
 
 from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionXLPipeline, AutoPipelineForText2Image, StableDiffusionXLControlNetPipeline, StableVideoDiffusionPipeline
@@ -13,11 +11,13 @@ from ..helpers.pipeline import __clean_up_pipeline
 # from factories.lora_factory import LoRAFactory
 # from models.LoRA.lora_conf import ALL_LORAS
 from ..helpers.lora import find_lora_by_name
+from ..helpers.directory import get_root_folder
 # from ..loras import LORAS
 from ..models.abstract_image_pipeline import AbstractImagePipeline
 from ..serializers.base_image_request import BaseImageRequest
 from ..serializers.model_request import ModelRequest
 
+MODEL_DIRECTORY = f"{get_root_folder()}/image_models/"
 
 PREFIX = "/image_generation"
 
@@ -38,7 +38,7 @@ def all_lora_full_details(image: ModelRequest):
 def get_all_models():
     model_dir = MODEL_DIRECTORY
     if not model_dir.endswith("/"): model_dir += "/"
-    return [f for f in os.listdir(model_dir) if os.path.isdir(model_dir+f)]
+    return [model_file for model_file in os.listdir(model_dir) if os.path.isdir(model_dir+model_file)]
 
 
 @ROUTER.put("/download/")
@@ -87,22 +87,22 @@ def export_safetensor_local(safetensor_name: str):
 @ROUTER.post("/generate/")
 def generate_picture(image: BaseImageRequest):
     # TODO: Dreambooth instead of base_lora
-    base_lora = find_lora_by_name(
-        image.base_lora,
-        image.model
-        )
-    contextual_lora = find_lora_by_name(
-        image.contextual_lora,
-        image.model
-        )
-    pipeline = AbstractImagePipeline(MODEL_DIRECTORY, image.model, base_lora=base_lora)
+    # base_lora = find_lora_by_name(
+    #     image.base_lora,
+    #     image.model
+    #     )
+    # contextual_lora = find_lora_by_name(
+    #     image.contextual_lora,
+    #     image.model
+    #     )
+    pipeline = AbstractImagePipeline(MODEL_DIRECTORY, image.model, base_lora=None)
     image_store = io.BytesIO()
     for generated_image in pipeline.generate_image(
         image.prompt,
         height=image.height,
         width=image.width,
-        negative_prompt=image.negative_prompt,
-        lora_choice=contextual_lora):
+        negative_prompt=image.negative_prompt
+        ):
         generated_image.save(image_store,"png")
         break
 
