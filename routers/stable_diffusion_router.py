@@ -1,21 +1,28 @@
 import io
 import os
+from typing import List
 
 from diffusers import DiffusionPipeline, StableDiffusionPipeline, StableDiffusionXLPipeline, AutoPipelineForText2Image, StableDiffusionXLControlNetPipeline, StableVideoDiffusionPipeline
-from fastapi import Response, UploadFile, Depends, File
+from fastapi import Response, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from fastapi import APIRouter
 
 from ..helpers.pipeline import __clean_up_pipeline
 
-# from factories.lora_factory import LoRAFactory
+from ..factories.lora_factory import LoRAFactory
 # from models.LoRA.lora_conf import ALL_LORAS
 from ..helpers.lora import find_lora_by_name
 from ..helpers.directory import get_root_folder
 # from ..loras import LORAS
 from ..models.abstract_image_pipeline import AbstractImagePipeline
+
+# Input Objects
 from ..serializers.base_image_request import BaseImageRequest
 from ..serializers.model_request import ModelRequest
+from ..serializers.lora_request import LoraRequest
+
+# Exporters
+from ..export.export_json import JSONExporter
 
 MODEL_DIRECTORY = f"{get_root_folder()}/image_models/"
 
@@ -26,20 +33,32 @@ ROUTER = APIRouter(
     tags=["Text To Image Generation"]
 )
 
-@ROUTER.post("/loras/")
-def all_lora_full_details(image: ModelRequest):
-    ret_list = []
-    for lora in LORAS:
-        if lora.base_model in image.model:
-            ret_list.append(lora)
-    return ret_list
+@ROUTER.post("/lora/")
+def upload_lora(
+        lora_file: UploadFile = File(...),
+        model: str = Form(None),
+        keywords: List[str] = Form(None),
+    ):
+    """
+        API endpoint for creating a new LoRA
+    """
+    if model not in get_all_models():
+        return f"{model} not found, is it downloaded?"
+    lora_file = LoRAFactory.create(
+        lora_file = lora_file,
+        model = model,
+        keywords = keywords
+    )
+    # Save the file into the LoRA directory
+    lora_file.save('loras')
+    json_object = JSONExporter().export(lora_file)
+
 
 @ROUTER.get("/models/")
 def get_all_models():
     model_dir = MODEL_DIRECTORY
     if not model_dir.endswith("/"): model_dir += "/"
     return [model_file for model_file in os.listdir(model_dir) if os.path.isdir(model_dir+model_file)]
-
 
 @ROUTER.put("/download/")
 def download_model_from_hugging_face(model_name: str):
@@ -86,15 +105,6 @@ def export_safetensor_local(safetensor_name: str):
 
 @ROUTER.post("/generate/")
 def generate_picture(image: BaseImageRequest):
-    # TODO: Dreambooth instead of base_lora
-    # base_lora = find_lora_by_name(
-    #     image.base_lora,
-    #     image.model
-    #     )
-    # contextual_lora = find_lora_by_name(
-    #     image.contextual_lora,
-    #     image.model
-    #     )
     pipeline = AbstractImagePipeline(MODEL_DIRECTORY, image.model, base_lora=None)
     image_store = io.BytesIO()
     for generated_image in pipeline.generate_image(

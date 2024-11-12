@@ -1,24 +1,22 @@
+import os
+
+from ..helpers.directory import get_root_folder
+
 class LoRA():
 
     def __init__(
         self,
-        path,
-        weight_name,
-        keywords,
-        base_model,
-        scale=1,
-        is_style=False,
-        ):
-        self.path=path,
-        self.weight_name=weight_name
-        self.scale = scale
-        self.keywords = set()
-        self.is_style = is_style
-        self.base_model = base_model
-        for word in keywords:
-            self.keywords.add(word.lower())
-        
-    def __eq__(self, weight_name):
-        if isinstance(weight_name, str):
-            return self.weight_name.replace(".safetensors","") == weight_name.replace(".safetensors","")
-        return False
+        name,
+        safetensor,
+        model,
+        keywords):
+        self.name = name
+        self.safetensor = safetensor
+        self.model = model
+        self.keywords = keywords
+
+    def save(self, directory):
+        save_directory = f"{get_root_folder()}/{directory}/{self.safetensor.filename}"
+        file_contents = self.safetensor.file.read()
+        with open(save_directory, "wb") as safe_tensor_file:
+            safe_tensor_file.write(file_contents)
