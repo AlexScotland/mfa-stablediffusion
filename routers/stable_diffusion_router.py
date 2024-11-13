@@ -13,7 +13,7 @@ from ..factories.lora_factory import LoRAFactory
 # from models.LoRA.lora_conf import ALL_LORAS
 from ..helpers.lora import find_lora_by_name
 from ..helpers.directory import get_root_folder
-# from ..loras import LORAS
+from ..loras import ALL_LORAS
 from ..models.abstract_image_pipeline import AbstractImagePipeline
 
 # Input Objects
@@ -54,8 +54,12 @@ def upload_lora(
         lora_file.save('loras')
     except FileExistsError:
         return "lora path already exists"
-    json_object = YAMLExporter().export(lora_file)
+    YAMLExporter().export(lora_file)
+    return lora_file.name
 
+@ROUTER.get("/lora/")
+def get_loras():
+    return ALL_LORAS
 
 @ROUTER.get("/models/")
 def get_all_models():

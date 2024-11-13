@@ -9,12 +9,13 @@ class LoRA():
         name,
         safetensor,
         model,
-        keywords):
+        keywords,
+        directory = None):
         self.name = name
         self.safetensor = safetensor
         self.model = model
         self.keywords = keywords
-        self.directory = None
+        self.directory = directory
 
     def save(self, directory):
         self.directory = f"{get_root_folder()}/{directory}/{self.safetensor.filename.replace('.safetensors', '')}"
@@ -27,7 +28,8 @@ class LoRA():
     def __repr__(self):
         return str({
             'name': self.name,
-            'safetensor': f'{self.directory}/{self.safetensor.filename}',
+            'safetensor': self.safetensor.filename,
+            'directory': self.directory,
             'keywords': self.keywords,
             'model': self.model
         })
