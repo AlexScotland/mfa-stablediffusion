@@ -22,7 +22,7 @@ from ..serializers.model_request import ModelRequest
 from ..serializers.lora_request import LoraRequest
 
 # Exporters
-from ..export.export_json import JSONExporter
+from ..export.export_yaml import YAMLExporter
 
 MODEL_DIRECTORY = f"{get_root_folder()}/image_models/"
 
@@ -50,8 +50,11 @@ def upload_lora(
         keywords = keywords
     )
     # Save the file into the LoRA directory
-    lora_file.save('loras')
-    json_object = JSONExporter().export(lora_file)
+    try:
+        lora_file.save('loras')
+    except FileExistsError:
+        return "lora path already exists"
+    json_object = YAMLExporter().export(lora_file)
 
 
 @ROUTER.get("/models/")
