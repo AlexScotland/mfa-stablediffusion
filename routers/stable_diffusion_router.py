@@ -10,14 +10,15 @@ from fastapi import APIRouter
 from ..helpers.pipeline import __clean_up_pipeline
 
 from ..factories.lora_factory import LoRAFactory
-# from models.LoRA.lora_conf import ALL_LORAS
-from ..helpers.lora import find_lora_by_name
+
+from ..helpers.lora import get_all_loras_by_name
 from ..helpers.directory import get_root_folder
-from ..loras import ALL_LORAS
+from ..loras import create_all_loras
 from ..models.abstract_image_pipeline import AbstractImagePipeline
 
 # Input Objects
 from ..serializers.base_image_request import BaseImageRequest
+from ..serializers.image_with_lora_request import ImageWithLoras
 from ..serializers.model_request import ModelRequest
 from ..serializers.lora_request import LoraRequest
 
@@ -47,7 +48,7 @@ def upload_lora(
     lora_file = LoRAFactory.create(
         lora_file = lora_file,
         model = model,
-        keywords = keywords
+        keywords = keywords[0].split(",")
     )
     # Save the file into the LoRA directory
     try:
@@ -55,11 +56,12 @@ def upload_lora(
     except FileExistsError:
         return "lora path already exists"
     YAMLExporter().export(lora_file)
+    create_all_loras()
     return lora_file.name
 
 @ROUTER.get("/lora/")
 def get_loras():
-    return ALL_LORAS
+    return create_all_loras()
 
 @ROUTER.get("/models/")
 def get_all_models():
@@ -111,14 +113,15 @@ def export_safetensor_local(safetensor_name: str):
     return {"model": safetensor_name.replace(extension, "")}
 
 @ROUTER.post("/generate/")
-def generate_picture(image: BaseImageRequest):
-    pipeline = AbstractImagePipeline(MODEL_DIRECTORY, image.model, base_lora=None)
+def generate_picture(image: ImageWithLoras):
+    pipeline = AbstractImagePipeline(MODEL_DIRECTORY, image.model)
     image_store = io.BytesIO()
     for generated_image in pipeline.generate_image(
         image.prompt,
         height=image.height,
         width=image.width,
-        negative_prompt=image.negative_prompt
+        negative_prompt=image.negative_prompt,
+        loras = image.loras
         ):
         generated_image.save(image_store,"png")
         break

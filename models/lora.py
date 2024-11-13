@@ -25,11 +25,11 @@ class LoRA():
         with open(save_directory, "wb") as safe_tensor_file:
             safe_tensor_file.write(file_contents)
 
-    def __repr__(self):
-        return str({
+    def to_dict(self):
+        return {
             'name': self.name,
             'safetensor': self.safetensor.filename,
             'directory': self.directory,
             'keywords': self.keywords,
             'model': self.model
-        })
+        }
