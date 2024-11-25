@@ -24,25 +24,20 @@ class BaseImagePipeline:
 
     def _generate_pipeline(self, diffuser):
         # Default to CPU
-        input_touch_type=torch.float32
-        input_variant="fp32"
         to_value = "cpu"
-
+        input_touch_type=torch.float32
         if torch.cuda.is_available():
-            input_touch_type=torch.float16
-            input_variant="fp16"
             to_value = "cuda"
-        
-        elif torch.backends.mps.is_available():
             input_touch_type=torch.float16
-            input_variant="fp16"
+
+        elif torch.backends.mps.is_available():
             to_value = "mps"
-            
+            input_touch_type=torch.float16
+
         pipeline=diffuser.from_pretrained(
                 self.model_dir+self.model_name,
-                torch_dtype=input_touch_type, 
-                variant=input_variant,
                 use_safetensors=True,
+                torch_dtype=input_touch_type,
                 load_safety_checker=False,
                 local_files_only=True
                 ).to(to_value)
