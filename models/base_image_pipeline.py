@@ -27,17 +27,17 @@ class BaseImagePipeline:
         input_touch_type=torch.float32
         to_value = "cpu"
         if torch.cuda.is_available():
-            input_touch_type=torch.float16
             to_value = "cuda"
-        
-        elif torch.backends.mps.is_available():
             input_touch_type=torch.float16
+
+        elif torch.backends.mps.is_available():
             to_value = "mps"
-            
+            input_touch_type=torch.float16
+
         pipeline=diffuser.from_pretrained(
                 self.model_dir+self.model_name,
-                torch_dtype=input_touch_type, 
                 use_safetensors=True,
+                torch_dtype=input_touch_type,
                 load_safety_checker=False,
                 local_files_only=True
                 ).to(to_value)
